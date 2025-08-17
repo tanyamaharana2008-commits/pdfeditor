@@ -1,0 +1,128 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Edit Document</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    textarea { resize: vertical; font-family: Arial, sans-serif; font-size: 14px; }
+    .toolbar select { min-width: 100px; }
+    .table-editor td { min-width: 70px; word-break: break-word; }
+    .toolbar { flex-wrap: wrap; } /* wrap toolbar items on small screens */
+  </style>
+</head>
+<body class="bg-light">
+
+<div class="container py-3">
+  <div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10 col-12">
+      <div class="card shadow-lg rounded-4">
+        <div class="card-body p-3 p-md-4">
+          
+          <h3 class="text-center mb-3">📝 Edit Document</h3>
+
+          <form method="post">
+            {% csrf_token %}
+
+            <!-- Toolbar for text editing -->
+            <div class="toolbar mb-3 d-flex gap-2 align-items-center">
+              <label class="form-label mb-0 me-1">Font:</label>
+              <select id="fontFamily" class="form-select form-select-sm w-auto">
+                <option value="Arial, sans-serif">Arial</option>
+                <option value="'Times New Roman', serif">Times New Roman</option>
+                <option value="Courier New, monospace">Courier New</option>
+                <option value="Georgia, serif">Georgia</option>
+                <option value="Verdana, sans-serif">Verdana</option>
+              </select>
+
+              <label class="form-label mb-0 ms-2 me-1">Size:</label>
+              <select id="fontSize" class="form-select form-select-sm w-auto">
+                <option value="12px">12</option>
+                <option value="14px" selected>14</option>
+                <option value="16px">16</option>
+                <option value="18px">18</option>
+                <option value="20px">20</option>
+                <option value="24px">24</option>
+              </select>
+            </div>
+
+            <!-- Text editor -->
+            <div class="mb-3">
+              <label for="full_text" class="form-label">Extracted Text</label>
+              <textarea name="full_text" id="full_text" class="form-control" rows="12">{{ doc.full_text }}</textarea>
+            </div>
+
+            <!-- TABLES SECTION -->
+            <h5 class="mb-2">📊 Extracted Tables</h5>
+            <div id="table-container" class="table-responsive"></div>
+
+            <!-- Hidden field for saving JSON -->
+            <input type="hidden" name="tables_json" id="tables_json" value='{{ tables_json|safe }}'>
+
+            <button type="submit" class="btn btn-success w-100 mt-3">💾 Save Changes</button>
+          </form>
+
+          <div class="d-flex flex-column flex-md-row gap-2 mt-3">
+            <a href="{% url 'download_document' doc.id %}?type=word" class="btn btn-primary flex-fill">⬇ Word</a>
+            <a href="{% url 'download_document' doc.id %}?type=pdf" class="btn btn-danger flex-fill">⬇ PDF</a>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // FONT CONTROLS
+  const textArea = document.getElementById("full_text");
+  document.getElementById("fontFamily").addEventListener("change", function() {
+    textArea.style.fontFamily = this.value;
+  });
+  document.getElementById("fontSize").addEventListener("change", function() {
+    textArea.style.fontSize = this.value;
+  });
+
+  // Load tables JSON
+  let tables = JSON.parse(document.getElementById("tables_json").value || "[]");
+  let container = document.getElementById("table-container");
+
+  // Render tables
+  tables.forEach((table) => {
+    let tbl = document.createElement("table");
+    tbl.className = "table table-bordered table-editor mb-3";
+
+    table.forEach(row => {
+      let tr = document.createElement("tr");
+      row.forEach(cell => {
+        let td = document.createElement("td");
+        td.contentEditable = true;
+        td.innerText = cell;
+        tr.appendChild(td);
+      });
+      tbl.appendChild(tr);
+    });
+
+    container.appendChild(tbl);
+  });
+
+  // On submit → update hidden JSON
+  document.querySelector("form").addEventListener("submit", function() {
+    let newTables = [];
+    container.querySelectorAll("table").forEach(tbl => {
+      let rows = [];
+      tbl.querySelectorAll("tr").forEach(tr => {
+        let cells = [];
+        tr.querySelectorAll("td").forEach(td => cells.push(td.innerText));
+        rows.push(cells);
+      });
+      newTables.push(rows);
+    });
+    document.getElementById("tables_json").value = JSON.stringify(newTables);
+  });
+</script>
+
+</body>
+</html>
