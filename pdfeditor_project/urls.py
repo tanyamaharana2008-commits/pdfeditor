@@ -15,17 +15,14 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
-from pdfeditor_app import views
+from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.upload_pdf, name='upload_pdf'),
-    path('edit/<int:doc_id>/', views.edit_document, name='edit_document'),
-    path('download/<int:doc_id>/', views.download_document, name='download_document'),
+    path('', include('pdfeditor_app.urls')),  # include app URLs
 ]
-# ✅ Add this for serving uploaded & generated files in development
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
